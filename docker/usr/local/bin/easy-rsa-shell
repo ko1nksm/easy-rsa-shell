@@ -1,0 +1,33 @@
+#!/bin/sh -eu
+
+abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
+
+usage() {
+  cat <<HERE
+Usage: easy-rsa-shell [DATAFILE] [COMMAND] [OPTIONS...]
+
+Commands:
+  export    Export certificate and keys
+  password  Set a password for secret key encryption (required for export)
+  smime     Import certificate for OpenSSL S/MIME (required for export)
+
+Options:
+  -h, --help      Display this help
+  -v, --version   Display version
+HERE
+}
+
+if [ $# -gt 0 ]; then
+  case $1 in
+    -v | --version) echo $VERSION; exit ;;
+    -h | --help) usage; exit ;;
+    -?*) abort "unrecognized option '$1'." ;;
+  esac
+  type "easy-rsa-shell-$1" >/dev/null 2>&1 && exec "easy-rsa-shell-$@"
+  abort "'$1' is not a easy-rsa-shell command."
+fi
+
+[ "${DATAFILE:-}" ] || abort "Not specified data file."
+[ -f "/$DATAFILE" ] || abort "Data file is not a file."
+
+exec bash -l

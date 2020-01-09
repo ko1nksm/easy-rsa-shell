@@ -1,0 +1,26 @@
+#!/bin/sh -eu
+
+cat<<HERE
+./easyrsa init-pki                            # Initialize pki directory
+./easyrsa gen-dh                              # Create dh.pem
+
+./easyrsa build-ca nopass                     # Create ca.crt, ca.key
+./easyrsa build-server-full <SERVER> nopass   # Create SERVER.crt, SERVER.key
+./easyrsa build-client-full <CLIENT> nopass   # Create CLIENT.crt, CLIENT.key
+
+./easyrsa renew <NAME> nopass                 # Update NAME.crt, NAME.key
+./easyrsa revoke <NAME>                       # Delete NAME.crt, NAME.key
+./easyrsa gen-crl                             # Create/Update crl.pem
+
+
+Show CA:
+  ./easyrsa show-ca
+  openssl x509 -text -fingerprint -noout -in pki/ca.crt
+
+Show CERT:
+  ./easyrsa show-cert <NAME>
+  openssl x509 -text -fingerprint -noout -in pki/issued/NAME.crt
+
+Show CRL:
+  openssl crl -text -noout -in pki/crl.pem
+HERE

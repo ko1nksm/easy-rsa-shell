@@ -1,0 +1,19 @@
+#!/bin/sh -eu
+
+ESC=$(printf '\033')
+
+cat<<HERE
+$ESC[01;31m
+======================================================================
+|| easy_rsa shell                                                   ||
+======================================================================$ESC[m
+The files under the /root directory are encrypted.
+The directories /root and /tmp are writable, others are read-only.
+
+Commands:
+  help    See this message.
+  cheat   See cheat sheet.
+  exit    Exit with commit changes.
+  abort   Exit with discard changes.
+
+HERE

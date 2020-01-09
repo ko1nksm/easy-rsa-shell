@@ -1,0 +1,39 @@
+#!/bin/bash -eu
+
+usage() {
+  cat <<HERE
+Usage: easy-rsa-shell DATAFILE smime NAME [OPTIONS...]
+
+Options:
+  -o, --overwrite     Overwrite existing key
+HERE
+}
+
+OVERWRITE=''
+abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
+unknown() { abort "unrecognized option '$1'."; }
+for arg; do
+  case $arg in
+    -o | --overwrite) OVERWRITE=1 ;;
+    -h | --help) usage; exit ;;
+    -?*) unknown "$arg" ;;
+    *) set -- "$@" "$arg"
+  esac
+done
+
+certificate() {
+  cert=$(cat)
+  echo "$cert" | openssl x509 -noout 2>/dev/null || abort "Unsupported format."
+  printf '%s\n' "$cert"
+}
+
+[ "${1:-}" ] || abort "NAME is not specified."
+data=$(certificate) dir=$HOME/smime file="$dir/$1.crt"
+
+mkdir -p "$dir"
+if [ "$OVERWRITE" ]; then
+  echo "$data" > "$file"
+else
+  [ -e "$file" ] && abort "'$file' already exists."
+  (set -C; echo "$data" > "$file")
+fi

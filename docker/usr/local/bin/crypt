@@ -1,0 +1,63 @@
+#!/bin/sh -eu
+
+trap : INT
+
+prefix=/run/media/private/$(whoami)
+
+abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
+
+passphrase() {
+  trap : INT
+
+  passphrase="" confirmation=""
+
+  if [ "${EASY_RSA_SHELL_PASSWORD:-}" ]; then
+    printf '%s\n' "$EASY_RSA_SHELL_PASSWORD"
+    return
+  fi
+
+  stty -echo
+  printf 'Enter passphrase:' >&2
+  read -r passphrase
+  printf "\n" >&2
+  stty echo
+
+  if [ "${1:-}" = "--with-confirmation" ]; then
+    error=$(echo "$passphrase" | pwscore 2>&1) || abort "$error"
+    score=$(echo "$passphrase" | pwscore)
+    [ "$score" -ge 50 ] || abort "Passphrase too weak"
+
+    stty -echo
+    printf 'Re enter passphrase:' >&2
+    read -r confirmation
+    printf "\n" >&2
+    stty echo
+
+    [ "$passphrase" = "$confirmation" ] || abort "Passphrases do not match"
+  fi
+
+  printf '%s\n' "$passphrase"
+}
+
+case $1 in
+  create)
+    [ -s "$2" ] && abort "File '$2' already created"
+    passphrase=$(passphrase --with-confirmation)
+    echo "Wait a few seconds..."
+    dd if=/dev/zero of="$2" bs=${4:-10M} count=1 status=none
+    zuluCrypt-cli -c -d "$2" -k -z ext4 -t luks -p "$passphrase" >/dev/null
+    zuluCrypt-cli -o -d "$2" -m "$3" -p "$passphrase"
+    ;;
+  mount)
+    [ -e "$2" ] || abort "File '$2' does not exist"
+    passphrase=$(passphrase)
+    zuluCrypt-cli -o -d "$2" -m "$3" -p "$passphrase"
+    ;;
+  unmount)
+    mountpoint -q "$prefix/$3" && umount "$prefix/$3" ||:
+    zuluCrypt-cli -q -d "$2" ||:
+    ;;
+  mountpoint)
+    printf '%s\n' "$prefix/$2"
+    ;;
+esac

@@ -1,0 +1,157 @@
+#!/bin/sh -eu
+
+usage() {
+  cat <<HERE
+Usage: easy-rsa-shell DATAFILE export NAME [OPTIONS...]
+
+Options:
+  -s, --server            Export server files
+  -t, --ta FILE           TLS key file (default: ta.key)
+  -f, --format FORMAT     Archive format:
+                            tgz (default), zip
+  -e, --encrypt ENCRYPT   Encryption:
+                            openssl:smime     (default)
+                            openssl:password
+                            password          zip format only
+  -m, --method METHOD     Encryption method
+                            OpenSSL:
+                              aes-256-cbc     (default)
+                              and OpenSSL supported ciphers
+                            ZIP:
+                              zipcrypto (default)
+                              aes128, aes192, aes256
+  -r, --raw               Output binary format without base64 encoding
+HERE
+}
+
+SERVER='' TA='ta.key' CRL='crl.pem' FORMAT='tgz'
+ENCRYPT='openssl:smime' METHOD='' RAW=''
+
+abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
+unknown() { abort "unrecognized option '$1'"; }
+required() { [ $# -gt 1 ] || abort "option '$1' requires an argument"; }
+param() { eval "$1=\$$1\ \\\"\"\\\${$2}\"\\\""; }
+parse_options() {
+  OPTIND=$(($# + 1))
+  while [ $# -gt 0 ] && OPTARG=; do
+    case $1 in
+      -s | --server ) SERVER=1 ;;
+      -t | --ta     ) required "$@" && shift; TA=$1 ;;
+      -f | --format ) required "$@" && shift; FORMAT=$1 ;;
+      -e | --encrypt) required "$@" && shift; ENCRYPT=$1 ;;
+      -m | --method ) required "$@" && shift; METHOD=$1 ;;
+      -r | --raw    ) RAW=1 ;;
+      -h | --help   ) usage && exit ;;
+      -?*) unknown "$@" ;;
+      *) param PARAMS $((OPTIND - $#))
+    esac
+    shift
+  done
+}
+
+PARAMS=''
+parse_options "$@"
+eval "set -- $PARAMS"
+
+name=$1
+pki=$HOME/pki
+
+smime="$HOME/smime/$name.crt"
+password="$HOME/passwords/$name"
+archive="$name.$FORMAT"
+
+dh_pem="$pki/dh.pem"
+ca_crt="$pki/ca.crt"
+crl_pem="$pki/$CRL"
+crt="$pki/issued/$name.crt"
+key="$pki/private/$name.key"
+ta_key="$HOME/$TA"
+
+if [ ! -e "$ca_crt" ]; then
+  abort "'$ca_crt' not found."
+fi
+if [ ! -e "$crt" ] || [ ! -e "$key" ]; then
+  abort "'$crt' and/or '$key' not found."
+fi
+if [ "$TA" != "ta.key" ] && [ ! -e "$ta_key" ]; then
+  abort "'$ta_key' not found."
+fi
+
+case $FORMAT in
+  tgz | zip) ;;
+  *) abort "Unsupported format '$FORMAT'" ;;
+esac
+
+case $ENCRYPT in
+  openssl:smime | openssl:password) : "${METHOD:=aes-256-cbc}" ;;
+  password)
+    case $FORMAT in
+      zip) : "${METHOD:=ZipCrypto}" ;;
+      *) abort "--encrypt password works with zip format only."
+    esac
+     ;;
+  *) abort "Unsupported encription '$ENCRYPT'" ;;
+esac
+
+case ${ENCRYPT#*:} in
+  password) [ -e "$password" ] || abort "$name's password not set." ;;
+  smime) [ -e "$smime" ] || abort "$name's cerficate not set." ;;
+esac
+
+tmpdir=$(mktemp -d)
+cd "$tmpdir"
+mkdir "$name"
+
+set -- "$ca_crt" "$crt" "$key"
+if [ "$SERVER" ]; then
+  [ -e "$dh_pem" ] && set -- "$@" "$dh_pem"
+  [ -e "$crl_pem" ] && set -- "$@" "$crl_pem"
+fi
+[ -e "$ta_key" ] && set -- "$@" "$ta_key"
+cp "$@" "$name/"
+
+while read -r tag file cmd; do
+  if [ -e "$name/${file##*/}" ]; then
+    echo "<$tag>"
+    ${cmd:-cat} "$name/${file##*/}" 2>/dev/null
+    echo "</$tag>"
+  fi
+done << HERE > "$name/ovpn"
+ca          $ca_crt   openssl x509 -in
+cert        $crt      openssl x509 -in
+key         $key      openssl rsa -in
+crl-verify  $crl_pem  openssl crl -in
+dh          $dh_pem
+tls-auth    $ta_key
+HERE
+
+case $FORMAT in
+  tgz) tar czf "$archive" "$name" ;;
+  zip)
+    set --
+    if [ "$ENCRYPT" = "passwrod" ]; then
+      pass=$(cat "$password")
+      set -- -p"$pass" -mem="$METHOD"
+    fi
+    7za a "$@" "$archive" "$name" >/dev/null
+    ;;
+esac
+
+case $ENCRYPT in
+  openssl:smime)
+    openssl smime -encrypt -"$METHOD" -in "$archive" "$smime"
+    ;;
+  openssl:password)
+    openssl enc -"$METHOD" -pbkdf2 -a -in "$archive" -pass "file:$password"
+    ;;
+  password)
+    # Already encrypted
+    if [ "$RAW" ]; then
+      cat "$archive"
+    else
+      base64 "$archive"
+    fi
+esac
+
+cd /
+rm -rf "$tmpdir"
