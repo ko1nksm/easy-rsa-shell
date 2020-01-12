@@ -7,8 +7,8 @@ $ESC[01;31m
 ======================================================================
 || easy_rsa shell                                                   ||
 ======================================================================$ESC[m
-The files under the /root directory are encrypted.
-The directories /root and /tmp are writable, others are read-only.
+The files under the '$HOME' directory are encrypted. The directories
+'$HOME', '$DATADIR' and '/tmp' are writable. Others are read-only.
 
 Commands:
   help    See this message.

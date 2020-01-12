@@ -3,10 +3,12 @@
 cadir="$DATADIR/ca" home="/home/.${HOME##*/}"
 cp -a "$HOME" "$home"
 if [ ! -e "$cadir" ]; then
-  echo "Make ca directory"
+  echo "Make CA directory [$cadir]"
   make-cadir "$cadir"
-  # Workaround for https://github.com/OpenVPN/easy-rsa/issues/261
-  sed -i 's|^RANDFILE.*/\.rnd|#\0|' "$cadir/openssl-easyrsa.cnf"
 fi
 unionfs-fuse -o nonempty "$cadir"=RW:"$home"=RW "$HOME"
-echo "The encrypted volume was merged the '$HOME' directory using by unionfs"
+
+# Workaround for https://github.com/OpenVPN/easy-rsa/issues/261
+sed -i 's|^RANDFILE.*/\.rnd|#\0|' "$HOME/openssl-easyrsa.cnf"
+
+echo "The CA directory was merged the '$HOME' directory using by unionfs"
