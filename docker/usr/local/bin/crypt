@@ -21,9 +21,10 @@ passphrase() {
   stty echo
 
   if [ "${1:-}" = "--with-confirmation" ]; then
-    error=$(echo "$passphrase" | pwscore 2>&1) || abort "$error"
-    score=$(echo "$passphrase" | pwscore)
-    [ "$score" -ge 50 ] || abort "Passphrase too weak"
+    if ! error=$(checkpassword "$passphrase" 50 2>&1); then
+      error=$(echo "$error" | sed -E "s/(pass)word/\1phrase/gi")
+      abort "$error"
+    fi
 
     stty -echo
     printf 'Re enter passphrase:' >&2

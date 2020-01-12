@@ -53,6 +53,7 @@ PARAMS=''
 parse_options "$@"
 eval "set -- $PARAMS"
 
+[ "${1:-}" ] || abort "NAME is not specified."
 name=$1
 pki=$HOME/pki
 

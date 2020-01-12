@@ -46,7 +46,8 @@ case ${1:-} in ([!-]*)
 esac
 
 case ${1:-} in (-* | "")
-  set -- -it --rm -e EASY_RSA_SHELL_PASSWORD easy-rsa-shell easy-rsa-shell "$@"
+  set -- -it --rm easy-rsa-shell easy-rsa-shell "$@"
+  set -- -e EASY_RSA_SHELL_PASSWORD -e EASY_RSA_SHELL_ALLOW_WEAK_PASSWORD "$@"
   if [ "$file" = "" ]; then
     docker run "$@"
     exit 0
