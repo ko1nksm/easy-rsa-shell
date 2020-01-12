@@ -58,7 +58,7 @@ case ${1:-} in (-* | "")
   fi
   trap "" INT
   (set -C && cat "$file" > "$file.$tmp")
-  set -- -e DATAFILE="/$id" --label=easy-rsa-shell="$id" "$@"
+  set -- -e DATAFILE="$id" --label=easy-rsa-shell="$id" "$@"
 
   error=""
   docker run --privileged -v "$normalizee_path.$tmp:/$id" "$@" || error=$?

@@ -1,7 +1,6 @@
 #!/bin/sh -eu
 
-mountpoint=$(crypt mountpoint "$1")
-cadir="$mountpoint/ca" home="/home/.${HOME##*/}"
+cadir="$DATADIR/ca" home="/home/.${HOME##*/}"
 cp -a "$HOME" "$home"
 if [ ! -e "$cadir" ]; then
   echo "Make ca directory"

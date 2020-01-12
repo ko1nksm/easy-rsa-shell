@@ -12,14 +12,15 @@ help() { $(which help); }
 
 if [ $$ -eq 1 ]; then
   set -eu
+  mkdir -p "$DATADIR"
   if [ -s "/$DATAFILE" ]; then
     echo "Mount encrypted volume"
-    crypt mount "/$DATAFILE" data
+    crypt mount "/$DATAFILE" "$DATADIR"
   else
     echo "Create encrypted volume"
-    crypt create "/$DATAFILE" data
+    crypt create "/$DATAFILE" "$DATADIR"
   fi
-  initialize-home data
+  initialize-home
   cd $PWD
   mount -r -o remount /
   mount -t tmpfs -o size=100M tmpfs /tmp

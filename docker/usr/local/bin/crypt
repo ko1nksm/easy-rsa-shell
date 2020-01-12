@@ -2,8 +2,6 @@
 
 trap : INT
 
-prefix=/run/media/private/$(whoami)
-
 abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
 
 passphrase() {
@@ -39,25 +37,38 @@ passphrase() {
   printf '%s\n' "$passphrase"
 }
 
+get_zulucrypt_device() {
+  for i in /dev/mapper/zuluCrypt*; do
+    device_path=$(zuluCrypt-cli -P -d "$i")
+    [ "$1" = "$device_path" ] || continue
+    echo "$i"
+    return 0
+  done
+  return 1
+}
+
 case $1 in
   create)
     [ -s "$2" ] && abort "File '$2' already created"
     passphrase=$(passphrase --with-confirmation)
     echo "Wait a few seconds..."
     dd if=/dev/zero of="$2" bs=${4:-10M} count=1 status=none
-    zuluCrypt-cli -c -d "$2" -k -z ext4 -t luks -p "$passphrase" >/dev/null
-    zuluCrypt-cli -o -d "$2" -m "$3" -p "$passphrase"
+    zuluCrypt-cli -c -d "$2" -k -z ext4 -t luks -p "$passphrase" > /dev/null
     ;;
   mount)
     [ -e "$2" ] || abort "File '$2' does not exist"
     passphrase=$(passphrase)
-    zuluCrypt-cli -o -d "$2" -m "$3" -p "$passphrase"
+    ;;
+esac
+
+case $1 in
+  create | mount)
+    zuluCrypt-cli -O -d "$2" -p "$passphrase"
+    device=$(get_zulucrypt_device "$2")
+    mount "$device" "$3"
     ;;
   unmount)
-    mountpoint -q "$prefix/$3" && umount "$prefix/$3" ||:
+    mountpoint -q "$3" && umount "$3" ||:
     zuluCrypt-cli -q -d "$2" ||:
-    ;;
-  mountpoint)
-    printf '%s\n' "$prefix/$2"
     ;;
 esac
