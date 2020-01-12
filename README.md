@@ -121,3 +121,10 @@ $ openssl enc -d -aes-256-cbc -in NAME.tgz.encrypted -o NAME.tgz
 $ easy-rsa-shell.sh DATAFILE password NAME
 $ easy-rsa-shell DATAFILE export NAME -f zip -e password -r > NAME.zip
 ```
+
+## Customize easy-rsa-shell
+
+Create `docker/root/.onbuild` if you want to customize easy-rsa-shell (e.g. install other package).
+The `.onbuild` script is invoked at building docker image stage.
+
+And also you can place various files freely in the `docker/root/` directory.
