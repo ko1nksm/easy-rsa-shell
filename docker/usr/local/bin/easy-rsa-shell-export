@@ -129,7 +129,7 @@ case $FORMAT in
   tgz) tar czf "$archive" "$name" ;;
   zip)
     set --
-    if [ "$ENCRYPT" = "passwrod" ]; then
+    if [ "$ENCRYPT" = "password" ]; then
       pass=$(cat "$password")
       set -- -p"$pass" -mem="$METHOD"
     fi
