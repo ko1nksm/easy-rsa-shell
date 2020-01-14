@@ -13,8 +13,8 @@ You can work freely under /root. All files under the directory are encrypted.
 
 ## Supported OS
 
+* Windows (Available batch file and shell script for WSL)
 * Linux
-* Windows (Command Prompt and WSL)
 * macOS
 
 Requirements: docker
@@ -41,8 +41,8 @@ The encrypted volume was merged the '/root' directory using by unionfs
 ======================================================================
 || easy_rsa shell                                                   ||
 ======================================================================
-The files under the /root directory are encrypted.
-The directories /root and /tmp are writable, others are read-only.
+The files under the '/root' directory are encrypted. The directories
+'/root', '/var/data' and '/tmp' are writable. Others are read-only.
 
 Commands:
   help    See this message.
@@ -128,3 +128,15 @@ Create `docker/root/.onbuild` if you want to customize easy-rsa-shell (e.g. inst
 The `.onbuild` script is invoked at building docker image stage.
 
 And also you can place various files freely in the `docker/root/` directory.
+
+## Envrionment variables
+
+| name                               | description                  |
+| ---------------------------------- | ---------------------------- |
+| EASY_RSA_SHELL_PASSWORD            | The password to login        |
+| EASY_RSA_SHELL_ALLOW_WEAK_PASSWORD | Set 1 to allow weak password |
+
+## Rescue data without easy-rsa-shell
+
+The data file is encrypted with VeraCrypt and use NTFS. Therefore you can mount
+with [VeraCrypt](https://www.veracrypt.fr/)
