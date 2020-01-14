@@ -1,27 +1,6 @@
 #!/bin/sh -eu
 
 abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
-normalizepath() {
-  case $(uname -a) in (*[Mm]icrosoft*)
-    wslpath -ma "$(realpath "$1")"
-    return
-  esac
-
-  case $1 in
-    /*) printf '%s\n' "$1" ;;
-    *) printf '%s\n' "${PWD%/}/$1" ;;
-  esac
-}
-fileid() {
-  fileid=$(stat -f /)
-  if [ "$fileid" = / ]; then
-    stat -f "%d#%i" "$1"
-  else
-    stat -c "%d#%i" "$1"
-  fi
-}
-
-${__SOURCED__:+return}
 
 {
   sleep 2
@@ -38,44 +17,42 @@ kill "$pid" 2>/dev/null ||:
 wait "$pid" 2>/dev/null ||:
 [ "$es" -eq 0 ] || exit "$es"
 
-file="" id=""
+file=""
 case ${1:-} in ([!-]*)
   file=$1 && shift
   [ -e "$file" ] || touch "$file"
-  id=$(fileid "$file")
 esac
 
 case ${1:-} in (-* | "")
-  set -- -it --rm easy-rsa-shell easy-rsa-shell "$@"
-  set -- -e EASY_RSA_SHELL_PASSWORD -e EASY_RSA_SHELL_ALLOW_WEAK_PASSWORD "$@"
+  set -- -it easy-rsa-shell easy-rsa-shell "$@"
   if [ "$file" = "" ]; then
-    docker run "$@"
+    docker run --rm "$@"
     exit 0
   fi
-  normalizee_path=$(normalizepath "$file") tmp="$id-tmp"
-  if [ -e "$file.$tmp" ]; then
-    abort "File '$file.$tmp' already exists." \
-          "Delete it manually if it is not opened by another process."
-  fi
-  trap "" INT
-  (set -C && cat "$file" > "$file.$tmp")
-  set -- -e DATAFILE="$id" --label=easy-rsa-shell="$id" "$@"
 
-  error=""
-  docker run --privileged -v "$normalizee_path.$tmp:/$id" "$@" || error=$?
-  if [ "$error" ]; then
-    rm "$file.$tmp"
-  else
-    mv "$file.$tmp" "$file"
+  file=$(realpath "$file")
+  if ! (set -C; : > "$file.lock") 2>/dev/null; then
+    abort "File '${file##*/}' already opened. If it is not opened by" \
+          "another process really, delete '${file##*/}.lock' manually."
   fi
+
+  set -- -e EASY_RSA_SHELL_PASSWORD -e EASY_RSA_SHELL_ALLOW_WEAK_PASSWORD "$@"
+  cid=$(docker create --privileged -v /data "$@")
+  echo "$cid" > "$file.lock"
+  error="" datafile=$(echo "$cid" | cut -c-12)
+  docker cp "$file" "$cid:/data/$datafile"
+  docker start -ai "$cid" || error=$?
+  if [ ! "$error" ] && [ -e "$file.lock" ]; then
+    docker cp "$cid:/data/$datafile" "$file.tmp"
+    mv "$file.tmp" "$file"
+  fi
+  rm -f "$file.lock"
+  docker rm -v "$cid" > /dev/null
   exit ${error:-0}
 esac
 
-cid=$(docker ps -q --filter label=easy-rsa-shell="$id")
-[ "$cid" ] || abort "Data file is not open."
+cid=$(cat "$file.lock" 2>/dev/null) || abort "Data file is not open."
 
-if [ "$1" = "password" ]; then
-  docker exec -it "$cid" easy-rsa-shell "$@"
-else
-  docker exec -i "$cid" easy-rsa-shell "$@"
-fi
+set -- -i "$cid" easy-rsa-shell "$@"
+[ "$4" = "password" ] && set -- -t -e EASY_RSA_SHELL_ALLOW_WEAK_PASSWORD "$@"
+docker exec "$@"

@@ -2,5 +2,5 @@
 if [ $$ -eq 1 ]; then
   cd /
   mountpoint -q "$HOME" && umount "$HOME" ||:
-  crypt unmount "/$DATAFILE" "$DATADIR" >/dev/null
+  crypt unmount "$DATAFILE" "$DATADIR" >/dev/null
 fi

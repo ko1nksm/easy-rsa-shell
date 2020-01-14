@@ -13,12 +13,12 @@ help() { $(which help); }
 if [ $$ -eq 1 ]; then
   set -eu
   mkdir -p "$DATADIR"
-  if [ -s "/$DATAFILE" ]; then
+  if [ -s "$DATAFILE" ]; then
     echo "Mount encrypted volume"
-    crypt mount "/$DATAFILE" "$DATADIR"
+    crypt mount "$DATAFILE" "$DATADIR"
   else
     echo "Create encrypted volume"
-    crypt create "/$DATAFILE" "$DATADIR"
+    crypt create "$DATAFILE" "$DATADIR"
   fi
   initialize-home
   cd $PWD
