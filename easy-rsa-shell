@@ -2,6 +2,13 @@
 
 abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
 
+abspath() {
+  case $1 in
+    /*) printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$PWD/$1" ;;
+  esac
+}
+
 {
   sleep 2
   echo "Building easy-rsa-shell docker image. Wait a minute..."
@@ -30,7 +37,7 @@ case ${1:-} in (-* | "")
     exit 0
   fi
 
-  file=$(realpath "$file")
+  file=$(abspath "$file")
   if ! (set -C; : > "$file.lock") 2>/dev/null; then
     abort "File '${file##*/}' already opened. If it is not opened by" \
           "another process really, delete '${file##*/}.lock' manually."
