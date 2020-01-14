@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       openssl p7zip-full zip unzip libpwquality-tools cracklib-runtime \
       openssh-client curl wget vim less tree procps man
 
-ENV VERSION=0.1.0 DATADIR=/var/data
+ENV VERSION=0.2.0 DATADIR=/var/data
 WORKDIR /root
 COPY docker/. /
 RUN if [ -f .onbuild ]; then sh .onbuild; fi
