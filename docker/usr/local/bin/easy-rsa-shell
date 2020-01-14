@@ -1,6 +1,7 @@
 #!/bin/sh -eu
 
-export DATAFILE=/data/$(basename "$(cat /proc/1/cpuset)" | cut -c-12)
+cid=$(basename "$(cat /proc/1/cpuset)" | cut -c-12)
+export DATAFILE=/data/$cid
 
 abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
 
@@ -21,11 +22,12 @@ HERE
 
 if [ $# -gt 0 ]; then
   case $1 in
-    -v | --version) echo $VERSION; exit ;;
+    -v | --version) echo "$VERSION"; exit ;;
     -h | --help) usage; exit ;;
     -?*) abort "unrecognized option '$1'." ;;
   esac
-  type "easy-rsa-shell-$1" >/dev/null 2>&1 && exec "easy-rsa-shell-$@"
+  command="easy-rsa-shell-$1"
+  type "$command" >/dev/null 2>&1 && shift && exec "$command" "$@"
   abort "'$1' is not a easy-rsa-shell command."
 fi
 

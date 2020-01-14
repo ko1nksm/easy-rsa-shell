@@ -51,7 +51,7 @@ case $1 in
     [ -s "$2" ] && abort "File '$2' already created"
     passphrase=$(passphrase --with-confirmation)
     echo "Wait a few seconds..."
-    dd if=/dev/zero of="$2" bs=${4:-10M} count=1 status=none
+    dd if=/dev/zero of="$2" bs="${4:-10M}" count=1 status=none
     zuluCrypt-cli -c -d "$2" -k -z ntfs -t vcrypt -p "$passphrase" > /dev/null
     ;;
   mount)
@@ -85,7 +85,9 @@ case $1 in
     echo "The encrypted volume was mounted at the '$3' directory"
     ;;
   unmount)
-    mountpoint -q "$3" && umount "$3" ||:
+    if mountpoint -q "$3"; then
+      umount "$3" ||:
+    fi
     zuluCrypt-cli -q -d "$2" ||:
     ;;
 esac

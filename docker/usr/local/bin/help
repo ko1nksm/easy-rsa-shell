@@ -3,10 +3,10 @@
 ESC=$(printf '\033')
 
 cat<<HERE
-$ESC[01;31m
+${ESC}[01;31m
 ======================================================================
 || easy_rsa shell                                                   ||
-======================================================================$ESC[m
+======================================================================${ESC}[m
 The files under the '$HOME' directory are encrypted. The directories
 '$HOME', '$DATADIR' and '/tmp' are writable. Others are read-only.
 
