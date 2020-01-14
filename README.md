@@ -14,7 +14,7 @@ You can work freely under /root. All files under the directory are encrypted.
 ## Supported OS
 
 * Linux
-* Windows (Currently WSL only)
+* Windows (Command Prompt and WSL)
 * macOS
 
 Requirements: docker
