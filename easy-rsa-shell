@@ -2,6 +2,8 @@
 
 abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
 
+type docker >/dev/null 2>&1 || abort "Requires docker."
+
 abspath() {
   case $1 in
     /*) printf '%s\n' "$1" ;;

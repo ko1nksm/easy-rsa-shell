@@ -1,4 +1,8 @@
 @echo off
+
+where docker 2> nul > nul
+if errorlevel 1 echo Requires docker >&2 & exit /b 1
+
 setlocal
 cd /d %~dp0
 for /f "usebackq tokens=*" %%i in (`docker images -q easy-rsa-shell`) do set iid=%%i
