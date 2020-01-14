@@ -29,14 +29,15 @@ $ easy-rsa-shell DATAFILE
 
 ```console
 $ ./easy-rsa-shell datafile
-Building easy-rsa-shell docker image. Wait for seconds...
+Building easy-rsa-shell docker image. Wait a minute...
 Create encrypted volume
 Enter passphrase:
 Re enter passphrase:
 Wait a few seconds...
-SUCCESS: luks volume opened successfully
-volume mounted at: /run/media/private/root/data
-The encrypted volume was merged the '/root' directory using by unionfs
+SUCCESS: volume opened successfully
+The encrypted volume was mounted at the '/var/data' directory
+Make CA directory [/var/data/ca]
+The CA directory was merged the '/root' directory using by unionfs
 
 ======================================================================
 || easy_rsa shell                                                   ||
