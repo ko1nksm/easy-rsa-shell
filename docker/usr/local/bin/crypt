@@ -62,9 +62,26 @@ esac
 
 case $1 in
   create | mount)
-    zuluCrypt-cli -O -d "$2" -t vcrypt -p "$passphrase"
+    zuluCrypt-cli -O -d "$2" -t vcrypt -p "$passphrase" &
+
+    # Opening VeraCrypt Volume is very slow. Abort in few seconds.
+    i=50 error="ERROR: Volume could not be opened with the passphrase"
+    while [ "$i" -gt 0 ] && kill -0 $! 2>/dev/null; do
+      sleep 0.1
+      i=$((i - 1))
+    done
+    if [ "$i" -eq 0 ] && kill $! 2>/dev/null; then
+      wait $! ||:
+      abort "$error"
+    fi
+    wait $! || abort "$error"
+
     device=$(get_zulucrypt_device "$2")
-    mount -t ntfs -o permissions,windows_names "$device" "$3"
+    mount_options=permissions,windows_names
+    if ! error=$(mount -t ntfs -o "$mount_options" "$device" "$3" 2>&1); then
+      zuluCrypt-cli -q -d "$2" ||:
+      abort "$error"
+    fi
     echo "The encrypted volume was mounted at the '$3' directory"
     ;;
   unmount)

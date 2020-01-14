@@ -4,7 +4,7 @@ abort() { printf "\033[01;31m%s\033[m\n" "$@" >&2; exit 1; }
 
 {
   sleep 2
-  echo "Building easy-rsa-shell docker image. Wait for seconds..."
+  echo "Building easy-rsa-shell docker image. Wait a minute..."
 } &
 pid=$!
 
